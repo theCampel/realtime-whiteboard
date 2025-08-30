@@ -264,7 +264,7 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
         config: {
           turnDetection: {
             type: 'semantic_vad',
-            // eagerness: 'high',
+            eagerness: 'high',
             createResponse: true,
             interruptResponse: true,
           },
