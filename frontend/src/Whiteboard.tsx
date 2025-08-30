@@ -29,6 +29,44 @@ export default function Whiteboard() {
     const editor = editorRef.current
     if (!editor) return
 
+    // Geometry helpers (same as in useOpenAIRealtime)
+    const centerOf = (s: any) => ({
+      x: (s.x ?? 0) + ((s.props?.w ?? 0) / 2),
+      y: (s.y ?? 0) + ((s.props?.h ?? 0) / 2),
+    })
+
+    const edgePointRect = (center: { x: number; y: number }, halfW: number, halfH: number, toward: { x: number; y: number }) => {
+      const dx = toward.x - center.x
+      const dy = toward.y - center.y
+      if (dx === 0 && dy === 0) return { x: center.x, y: center.y }
+      const tx = halfW / Math.abs(dx || 1e-9)
+      const ty = halfH / Math.abs(dy || 1e-9)
+      const t = Math.min(tx, ty)
+      return { x: center.x + dx * t, y: center.y + dy * t }
+    }
+
+    const edgePointEllipse = (center: { x: number; y: number }, halfW: number, halfH: number, toward: { x: number; y: number }) => {
+      const dx = toward.x - center.x
+      const dy = toward.y - center.y
+      if (dx === 0 && dy === 0) return { x: center.x, y: center.y }
+      const scale = 1 / Math.sqrt((dx * dx) / (halfW * halfW || 1e-9) + (dy * dy) / (halfH * halfH || 1e-9))
+      return { x: center.x + dx * scale, y: center.y + dy * scale }
+    }
+
+    const edgePoint = (s: any, toward: { x: number; y: number }) => {
+      const c = centerOf(s)
+      const hw = (s.props?.w ?? 0) / 2
+      const hh = (s.props?.h ?? 0) / 2
+      
+      const shapeType = s.type
+      if (shapeType === 'server') {
+        return edgePointRect(c, hw, hh, toward)
+      } else if (shapeType === 'database' || shapeType === 'user' || shapeType === 'llm' || shapeType === 'frontend') {
+        return edgePointEllipse(c, hw, hh, toward)
+      }
+      return c
+    }
+
     const uuid = (globalThis as any).crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`
     const shapeId = `shape:${uuid}`
     
@@ -57,54 +95,83 @@ export default function Whiteboard() {
     
     // Create connections if suggested
     if (suggestion.connections && suggestion.connections.length > 0) {
-      const newShapeId = shapeId
+      const newShape = editor.getShape(shapeId)
       
       suggestion.connections.forEach((connection: any) => {
         const targetShapeId = `shape:${connection.to_component_id}`
         const targetShape = editor.getShape(targetShapeId)
         
-        if (targetShape) {
-          const newShape = editor.getShape(newShapeId)
-          if (newShape) {
-            // Create connection based on direction
-            let fromShape, toShape
-            if (connection.direction === 'to') {
-              fromShape = newShape
-              toShape = targetShape
-            } else if (connection.direction === 'from') {
-              fromShape = targetShape
-              toShape = newShape
-            } else {
-              // bidirectional - create one connection for now
-              fromShape = newShape
-              toShape = targetShape
-            }
-            
-            // Calculate connection points
-            const fromCenter = { 
-              x: fromShape.x + (fromShape.props?.w || 0) / 2, 
-              y: fromShape.y + (fromShape.props?.h || 0) / 2 
-            }
-            const toCenter = { 
-              x: toShape.x + (toShape.props?.w || 0) / 2, 
-              y: toShape.y + (toShape.props?.h || 0) / 2 
-            }
-            
-            const arrowId = `shape:connection_${uuid}_${connection.to_component_id}`
-            editor.createShapes([{
-              id: arrowId,
-              type: 'arrow',
-              props: {
-                start: fromCenter,
-                end: toCenter,
-                bend: 0,
-                color: 'black',
-                size: 'm',
-              },
-            }])
-            
-            console.log(`Created connection: ${connection.description}`)
+        if (targetShape && newShape) {
+          // Determine connection direction
+          let fromShape, toShape, fromUuid, toUuid
+          if (connection.direction === 'to') {
+            fromShape = newShape
+            toShape = targetShape
+            fromUuid = uuid
+            toUuid = connection.to_component_id
+          } else if (connection.direction === 'from') {
+            fromShape = targetShape
+            toShape = newShape
+            fromUuid = connection.to_component_id
+            toUuid = uuid
+          } else {
+            // bidirectional - create one connection for now
+            fromShape = newShape
+            toShape = targetShape
+            fromUuid = uuid
+            toUuid = connection.to_component_id
           }
+          
+          // Calculate edge points
+          const ca = centerOf(fromShape)
+          const cb = centerOf(toShape)
+          const start = edgePoint(fromShape, cb)
+          const end = edgePoint(toShape, ca)
+          
+          const arrowId = `shape:connection_${fromUuid}_${toUuid}`
+          
+          // Create arrow with bindings
+          editor.createShapes([{
+            id: arrowId,
+            type: 'arrow',
+            props: {
+              start,
+              end,
+              bend: 0,
+              color: 'black',
+              size: 'm',
+            },
+          }])
+
+          // Create bindings to make the arrow stick
+          editor.createBindings([
+            {
+              id: `binding:${arrowId}_start`,
+              type: 'arrow',
+              fromId: arrowId,
+              toId: fromShape.id,
+              props: {
+                terminal: 'start',
+                isPrecise: false,
+                isExact: false,
+                normalizedAnchor: { x: 0.5, y: 0.5 }
+              }
+            },
+            {
+              id: `binding:${arrowId}_end`,
+              type: 'arrow',
+              fromId: arrowId,
+              toId: toShape.id,
+              props: {
+                terminal: 'end',
+                isPrecise: false,
+                isExact: false,
+                normalizedAnchor: { x: 0.5, y: 0.5 }
+              }
+            }
+          ])
+          
+          console.log(`Created sticky connection: ${connection.description}`)
         } else {
           console.warn(`Target shape not found: ${targetShapeId}`)
         }
@@ -209,7 +276,7 @@ export default function Whiteboard() {
               setTimeout(() => {
                 console.log('🎯 Running analysis after component addition via voice')
                 architectureAnalysis.analyzeDiagram()
-              }, 10000) // 10 second delay to allow user to add more components
+              }, 1000) // 10 second delay to allow user to add more components
             }
           })
           
