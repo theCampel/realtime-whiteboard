@@ -25,6 +25,21 @@ export default function Whiteboard() {
     }
   }
 
+  const testConnectItems = async () => {
+    // First, ensure the items exist to avoid errors. This is for testing convenience.
+    await testDrawDatabase()
+    await testDrawServer()
+    
+    try {
+      // Connect the two items we just created
+      const response = await fetch('http://localhost:8000/test-connect/test-db/api-server')
+      const command = await response.json()
+      sendTestCommand(command)
+    } catch (error) {
+      console.error('Failed to test connect:', error)
+    }
+  }
+
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
       {/* Status Bar */}
@@ -87,6 +102,20 @@ export default function Whiteboard() {
           }}
         >
           Test: Draw Server
+        </button>
+        
+        <button
+          onClick={testConnectItems}
+          style={{
+            background: '#cc6600',
+            border: 'none',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Test: Connect Items
         </button>
       </div>
 
