@@ -11,3 +11,26 @@ body {
   width: 100vw;
   height: 100vh;
 }
+
+/* Shape color variables */
+:root {
+  /* Database colors */
+  --database-primary: 142 76% 36%;    /* Green */
+  --database-secondary: 142 76% 46%;  /* Lighter green */
+  --database-accent: 142 76% 26%;     /* Darker green */
+  
+  /* Server colors */
+  --server-primary: 220 9% 46%;       /* Gray */
+  --server-secondary: 220 9% 56%;     /* Lighter gray */
+  --server-accent: 220 9% 36%;        /* Darker gray */
+  
+  /* User colors */
+  --user-primary: 217 91% 60%;        /* Blue */
+  --user-secondary: 217 91% 70%;      /* Lighter blue */
+  --user-accent: 217 91% 50%;         /* Darker blue */
+  
+  /* LLM colors */
+  --llm-primary: 271 64% 71%;         /* Purple */
+  --llm-secondary: 271 64% 81%;       /* Lighter purple */
+  --llm-accent: 271 64% 61%;          /* Darker purple */
+}
