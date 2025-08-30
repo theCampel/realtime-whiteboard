@@ -8,8 +8,8 @@ import { UserShapeUtil } from './components/ui/UserShape'
 import { LLMShapeUtil } from './components/ui/LLMShape'
 
 export default function Whiteboard() {
-  const { isConnected, isRecording, startRecording, stopRecording, sendTestCommand } = useRealtime()
-  const { token, setToken, isRealtimeConnected, isRealtimeConnecting, isMuted, error, connectRealtime, disconnectRealtime, toggleMute } = useOpenAIRealtime()
+  const { isConnected, isRecording, startRecording, stopRecording, sendTestCommand, setEditor: setEditorRealtime } = useRealtime()
+  const { token, setToken, isRealtimeConnected, isRealtimeConnecting, isMuted, error, connectRealtime, disconnectRealtime, toggleMute, setEditor: setEditorOpenAI } = useOpenAIRealtime()
 
   const testDrawDatabase = async () => {
     try {
@@ -202,9 +202,9 @@ export default function Whiteboard() {
       <Tldraw 
         shapeUtils={[DatabaseShapeUtil, ServerShapeUtil, UserShapeUtil, LLMShapeUtil]}
         onMount={(editor) => {
-          // Register the editor with the useRealtime hook
-          setEditor(editor)
-          
+          // Provide editor to hooks
+          setEditorRealtime(editor)
+          setEditorOpenAI(editor)
           // Function to find a good position for new shapes
           const findGoodPosition = (shapeType: string, shapeWidth: number, shapeHeight: number) => {
             // Get all shapes and filter by type

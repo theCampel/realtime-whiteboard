@@ -13,6 +13,7 @@ interface UseOpenAIRealtimeState {
   connectRealtime: () => Promise<void>
   disconnectRealtime: () => void
   toggleMute: () => void
+  setEditor: (editor: any) => void
 }
 
 export function useOpenAIRealtime(): UseOpenAIRealtimeState {
@@ -24,6 +25,12 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
 
   const agentRef = useRef<RealtimeAgent | null>(null)
   const sessionRef = useRef<RealtimeSession | null>(null)
+  const editorRef = useRef<any>(null)
+
+  const SYSTEM_PROMPT =
+    'You control a whiteboard. Interpret spoken instructions as immediate tool calls. ' +
+    'Do not wait for full sentences if a coherent unit of action is clear. ' +
+    'Allowed item types: database, person. Return UUIDs from draw_item and reuse them.'
 
   const connectRealtime = useCallback(async () => {
     const apiKey = token.trim()
@@ -43,20 +50,104 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
     setIsRealtimeConnecting(true)
     setError(null)
     try {
-      // Define an example tool like in the reference
-      const getWeather = tool({
-        name: 'getWeather',
-        description: 'Get the weather for a given city',
-        parameters: z.object({ city: z.string() }),
-        execute: async ({ city }) => {
-          return `The weather in ${city} is sunny`
-        }
+      // Whiteboard tools
+      const drawItem = tool({
+        name: 'draw_item',
+        description: 'Draw an item on the canvas. Allowed item types: database, person',
+        parameters: z.object({
+          item_type: z.enum(['database', 'person']),
+        }),
+        execute: async ({ item_type }) => {
+          const editor = editorRef.current
+          if (!editor) throw new Error('Editor not initialised')
+
+          const id = (globalThis as any).crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`
+          const type = item_type === 'person' ? 'user' : 'database'
+
+          console.log('Drawing item:', item_type)
+
+          // Try to place near viewport centre
+          let x = 0
+          let y = 0
+          try {
+            const center = editor.getViewportScreenCenter?.()
+            if (center) {
+              x = center.x - 40
+              y = center.y - 40
+            }
+          } catch {
+            // fallback to origin
+          }
+
+          const shapePropsByType: Record<string, { w: number; h: number; color: string }> = {
+            database: { w: 80, h: 100, color: 'green' },
+            user: { w: 60, h: 80, color: 'blue' },
+          }
+
+          const props = shapePropsByType[type] || { w: 80, h: 80, color: 'black' }
+
+          editor.createShapes?.([
+            {
+              id,
+              type,
+              x,
+              y,
+              props,
+            },
+          ])
+
+          return id
+        },
+      })
+
+      const connectItems = tool({
+        name: 'connect',
+        description: 'Connect two items by their UUIDs with an arrow',
+        parameters: z.object({
+          item1_uuid: z.string(),
+          item2_uuid: z.string(),
+        }),
+        execute: async ({ item1_uuid, item2_uuid }) => {
+          const editor = editorRef.current
+          if (!editor) throw new Error('Editor not initialised')
+
+          console.log('Connecting items:', item1_uuid, item2_uuid)
+
+          const arrowId = (globalThis as any).crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`
+          // Create an arrow bound to the two shapes
+          editor.createShapes?.([
+            {
+              id: arrowId,
+              type: 'arrow',
+              props: {
+                start: { type: 'binding', boundShapeId: item1_uuid },
+                end: { type: 'binding', boundShapeId: item2_uuid },
+              },
+            },
+          ])
+          return 'ok'
+        },
+      })
+
+      const deleteItem = tool({
+        name: 'delete_item',
+        description: 'Delete an item by its UUID',
+        parameters: z.object({
+          item_uuid: z.string(),
+        }),
+        execute: async ({ item_uuid }) => {
+          const editor = editorRef.current
+          if (!editor) throw new Error('Editor not initialised')
+          editor.deleteShapes?.([item_uuid])
+          console.log('Deleting item:', item_uuid)
+          return 'ok'
+        },
       })
 
       const agent = new RealtimeAgent({
         name: 'Assistant',
-        instructions: 'You are a helpful assistant.',
-        tools: [getWeather]
+        instructions: SYSTEM_PROMPT,
+        tools: [drawItem, connectItems, deleteItem]
       });
 
       const session = new RealtimeSession(agent)
@@ -113,6 +204,10 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
     setIsMuted(Boolean(newMutedState))
   }, [])
 
+  const setEditor = useCallback((editor: any) => {
+    editorRef.current = editor
+  }, [])
+
   return {
     token,
     setToken,
@@ -122,7 +217,8 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
     error,
     connectRealtime,
     disconnectRealtime,
-    toggleMute
+    toggleMute,
+    setEditor
   }
 }
 
