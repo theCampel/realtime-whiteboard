@@ -112,7 +112,7 @@ Speak naturally about system architecture (e.g., "Add a database connected to th
 
 4. **Run the backend:**
    ```bash
-   uv run fastapi dev backend/src/whiteboard_api/main.py
+   uv run fastapi dev projects/backend/src/backend/main.py
    ```
 
 5. **Run the frontend (in another terminal):**
