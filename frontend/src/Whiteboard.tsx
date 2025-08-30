@@ -126,19 +126,6 @@ export default function Whiteboard() {
         {error ? (
           <span style={{ color: '#cc0000' }}>{error}</span>
         ) : null}
-        <button
-          onClick={isRecording ? stopRecording : startRecording}
-          style={{
-            background: isRecording ? '#ff4444' : '#44ff44',
-            border: 'none',
-            color: 'white',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          {isRecording ? 'Stop Recording' : 'Start Recording'}
-        </button>
         
         {/* Test Buttons */}
         <button
