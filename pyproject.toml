@@ -10,7 +10,7 @@ dependencies = [
 members = ["projects/*"]
 
 [tool.uv.sources]
-api = { workspace = true }
+backend = { workspace = true }
 transcribe = { workspace = true }
 
 [tool.uv]
