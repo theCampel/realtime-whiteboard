@@ -79,9 +79,18 @@ export function useOpenAIRealtime(): UseOpenAIRealtimeState {
         const c = centerOf(s)
         const hw = (s.props?.w ?? 0) / 2
         const hh = (s.props?.h ?? 0) / 2
-        const geo = s.props?.geo
-        if (geo === 'rectangle') return edgePointRect(c, hw, hh, toward)
-        if (geo === 'ellipse') return edgePointEllipse(c, hw, hh, toward)
+        
+        // Use shape type to determine geometry
+        const shapeType = s.type
+        if (shapeType === 'server') {
+          // Server is rectangular
+          return edgePointRect(c, hw, hh, toward)
+        } else if (shapeType === 'database' || shapeType === 'user' || shapeType === 'llm') {
+          // Database, user, and LLM are more circular/elliptical
+          return edgePointEllipse(c, hw, hh, toward)
+        }
+        
+        // Fallback to center for unknown shapes
         return c
       }
 
