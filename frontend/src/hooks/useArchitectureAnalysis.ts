@@ -99,22 +99,29 @@ export function useArchitectureAnalysis(apiKey: string): UseArchitectureAnalysis
   }, [])
 
   const analyzeDiagram = useCallback(async () => {
-    console.log('analyzeDiagram called with:', { apiKey: apiKey ? apiKey.slice(0, 10) + '...' : 'none', isAnalyzing })
+    console.log('🔍 analyzeDiagram called with:', { apiKey: apiKey ? apiKey.slice(0, 10) + '...' : 'none', isAnalyzing })
     
-    if (!apiKey || isAnalyzing) {
-      console.log('Skipping analysis:', { hasApiKey: !!apiKey, isAnalyzing })
+    if (!apiKey) {
+      console.log('❌ No API key available')
+      return
+    }
+    
+    if (isAnalyzing) {
+      console.log('⏳ Already analyzing, skipping')
       return
     }
 
-    console.log('Starting diagram analysis...')
+    console.log('✅ Starting diagram analysis...')
     setIsAnalyzing(true)
     setError(null)
 
     try {
-      console.log('Analyzing diagram')
+      console.log('📊 Extracting diagram data...')
       const diagramData = extractDiagramData()
+      console.log('📊 Diagram data extracted:', diagramData)
       
       if (!diagramData || diagramData.components.length === 0) {
+        console.log('📊 No components found, skipping analysis')
         setSuggestions([])
         setLastAnalysis(new Date())
         return

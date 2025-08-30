@@ -22,29 +22,7 @@ export default function Whiteboard() {
   // Add state to track if initial analysis has been done
   const [hasRunInitialAnalysis, setHasRunInitialAnalysis] = useState(false)
 
-  // Queue analysis after the editor is mounted and has initial content
-  useEffect(() => {
-    console.log('Analysis effect triggered:', { 
-      hasEditor: !!editorRef.current, 
-      hasApiKey: !!openaiApiKey, 
-      hasRunInitial: hasRunInitialAnalysis 
-    })
-    
-    if (editorRef.current && openaiApiKey && !hasRunInitialAnalysis) {
-      // Initial analysis after a short delay to let the editor settle
-      const timer = setTimeout(() => {
-        const shapes = editorRef.current?.getCurrentPageShapes()
-        console.log('Checking for shapes:', shapes?.length || 0)
-        if (shapes && shapes.length > 0) {
-          console.log('Running initial analysis after editor mount')
-          architectureAnalysis.analyzeDiagram()
-          setHasRunInitialAnalysis(true)
-        }
-      }, 2000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [openaiApiKey, hasRunInitialAnalysis, architectureAnalysis.analyzeDiagram])
+  // Note: Analysis is now triggered by shape creation events in onMount
 
   const handleAcceptSuggestion = useCallback((suggestion: any) => {
     const editor = editorRef.current
@@ -202,11 +180,10 @@ export default function Whiteboard() {
             {isRealtimeConnected ? (isMuted ? 'Muted' : 'Unmuted') : 'Idle'}
           </span>
         </div>
-        {error ? (
+                {error ? (
           <span style={{ color: '#cc0000' }}>{error}</span>
         ) : null}
-
-      </div>
+        </div>
 
       {/* tldraw Canvas */}
       <Tldraw 
@@ -216,14 +193,30 @@ export default function Whiteboard() {
           setEditorOpenAI(editor)
           editorRef.current = editor
           architectureAnalysis.setEditor(editor)
-          console.log('tldraw editor mounted, checking for analysis trigger...')
+          console.log('tldraw editor mounted, setting up shape change listener...')
           
-          // Trigger analysis if we have shapes already and haven't run initial analysis
+          let previousShapeCount = 0
+          
+          // Listen for shape changes and trigger analysis when new components are added
+          editor.sideEffects.registerAfterCreateHandler('shape', (shape) => {
+            console.log('🎯 New shape created:', shape.type, shape.id)
+            
+            // Only trigger analysis for our custom component types, not arrows
+            if (['database', 'user', 'server', 'llm'].includes(shape.type)) {
+              console.log('🎯 Component added, queuing analysis in 10 seconds...')
+              setTimeout(() => {
+                console.log('🎯 Running analysis after component addition via voice')
+                architectureAnalysis.analyzeDiagram()
+              }, 10000) // 10 second delay to allow user to add more components
+            }
+          })
+          
+          // Initial analysis if shapes already exist
           setTimeout(() => {
             const shapes = editor.getCurrentPageShapes()
             console.log('Editor mounted, shapes:', shapes?.length || 0)
             if (shapes && shapes.length > 0 && openaiApiKey && !hasRunInitialAnalysis) {
-              console.log('Triggering analysis from onMount')
+              console.log('Triggering initial analysis from onMount')
               architectureAnalysis.analyzeDiagram()
               setHasRunInitialAnalysis(true)
             }
