@@ -2,7 +2,9 @@
 name = "whiteboard"
 version = "0.0.1"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "openai-agents[voice]>=0.2.10",
+]
 
 [tool.uv.workspace]
 members = ["projects/*"]

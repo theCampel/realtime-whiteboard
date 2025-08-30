@@ -4,11 +4,15 @@ version = "0.1.0"
 description = "Transcription service for Whiteboard"
 requires-python = ">=3.12"
 dependencies = [
-    "openai-agents[voice]>=0.2.10"
+    "openai-agents[voice]>=0.2.10",
+    "sounddevice>=0.5.0",
+    "numpy>=1.24.0"
 ]
 
 [project.scripts]
 transcribe-voice = "transcribe.voice:main"
+transcribe-mic = "transcribe.microphone:main"
+transcribe-pipeline = "transcribe.pipeline:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
 
-from agents import Agent, RunContextWrapper, function_tool
+from agents import Agent, function_tool
 
 from .service import WhiteboardService
 
@@ -12,6 +11,22 @@ SYSTEM_PROMPT = (
     "Do not wait for full sentences if a coherent unit of action is clear. "
     "Allowed item types: database, person. Return UUIDs from draw_item and reuse them."
 )
+
+# Global service instance
+_service: WhiteboardService | None = None
+
+
+def set_service(service: WhiteboardService) -> None:
+    """Set the global service instance."""
+    global _service
+    _service = service
+
+
+def get_service() -> WhiteboardService:
+    """Get the global service instance."""
+    if _service is None:
+        raise RuntimeError("Service not initialised. Call set_service() first.")
+    return _service
 
 
 class ItemType(str, Enum):
@@ -27,35 +42,31 @@ def parse_item_type(value: str) -> ItemType:
         raise ValueError(f"Unsupported item_type '{value}'. Allowed: {[t.value for t in ItemType]}") from exc
 
 
-@dataclass
-class Context:
-    service: WhiteboardService
-
-
 @function_tool
-def draw_item(wrapper: RunContextWrapper[Context], item_type: str) -> str:
+def draw_item(item_type: str) -> str:
     item_enum = parse_item_type(item_type)
-    return wrapper.context.service.draw_item(item_enum.value)
+    return get_service().draw_item(item_enum.value)
 
 
 @function_tool
-def connect(wrapper: RunContextWrapper[Context], item1_uuid: str, item2_uuid: str) -> None:
-    wrapper.context.service.connect(item1_uuid, item2_uuid)
+def connect(item1_uuid: str, item2_uuid: str) -> None:
+    get_service().connect(item1_uuid, item2_uuid)
 
 
 @function_tool
-def delete_item(wrapper: RunContextWrapper[Context], item_uuid: str) -> None:
-    wrapper.context.service.delete_item(item_uuid)
+def delete_item(item_uuid: str) -> None:
+    get_service().delete_item(item_uuid)
 
 
-def create_agent() -> tuple[Agent, WhiteboardService]:
-    agent = Agent[Context](
-        system_prompt=SYSTEM_PROMPT,
+def create_agent() -> Agent:
+    """Create the whiteboard agent with tools."""
+    return Agent(
+        name="WhiteboardAgent",
+        instructions=SYSTEM_PROMPT,
         tools=[
-            tools.draw_item,
-            tools.connect,
-            tools.delete_item,
+            draw_item,
+            connect,
+            delete_item,
         ],
+        model="gpt-4o-mini",
     )
-
-    return agent, service

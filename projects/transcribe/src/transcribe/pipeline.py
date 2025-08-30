@@ -2,19 +2,15 @@ from __future__ import annotations
 
 import asyncio
 
-from .agent import Context, create_agent
-from .service import WhiteboardService
+from .voice import WhiteboardVoicePipeline
 
 
 async def run_voice_pipeline(device: str | None = None) -> None:
-    agent, _service = create_agent()
-
-    service = WhiteboardService()
-    context = Context(service=service)
-
-    # TODO: Create and run a pipeline
-    
+    """Run the voice pipeline for whiteboard interactions."""
+    pipeline = WhiteboardVoicePipeline()
+    await pipeline.run_demo()
 
 
 def main() -> None:
+    """Main entry point for the pipeline."""
     asyncio.run(run_voice_pipeline())
