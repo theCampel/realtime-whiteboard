@@ -6,7 +6,6 @@ import asyncio
 from typing import Any
 
 import numpy as np
-import sounddevice as sd
 from agents.voice import AudioInput, SingleAgentVoiceWorkflow, StreamedAudioInput, VoicePipeline
 
 from .agent import create_agent, set_service
@@ -27,22 +26,13 @@ class WhiteboardVoicePipeline:
         """Process audio input and execute whiteboard commands."""
         result = await self.pipeline.run(audio_input)
 
-        # Create an audio player using sounddevice
-        player = sd.OutputStream(samplerate=24000, channels=1, dtype=np.int16)
-        player.start()
-
-        try:
-            # Play the audio stream as it comes in
-            async for event in result.stream():
-                if event.type == "voice_stream_event_audio":
-                    player.write(event.data)
-                elif event.type == "voice_stream_event_lifecycle":
-                    print(f"[Voice] Lifecycle event: {event}")
-                elif event.type == "voice_stream_event_error":
-                    print(f"[Voice] Error: {event}")
-        finally:
-            player.stop()
-            player.close()
+        # Process the stream without audio output
+        async for event in result.stream():
+            if event.type == "voice_stream_event_lifecycle":
+                print(f"[Voice] Lifecycle event: {event}")
+            elif event.type == "voice_stream_event_error":
+                print(f"[Voice] Error: {event}")
+            # Skip audio events - we don't need to output audio
 
     async def process_static_audio(self, audio_buffer: np.ndarray) -> None:
         """Process a complete audio buffer (for push-to-talk or pre-recorded audio)."""
@@ -60,14 +50,10 @@ class WhiteboardVoicePipeline:
         try:
             # Feed audio chunks to the pipeline
             async for chunk in audio_stream:
-                await streamed_input.add_chunk(chunk)
-
-            # Signal end of input
-            await streamed_input.close()
+                await streamed_input.add_audio(chunk)
 
             # Wait for processing to complete
             await process_task
         except Exception as e:
             print(f"[Voice] Stream processing error: {e}")
-            await streamed_input.close()
             raise

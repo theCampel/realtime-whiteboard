@@ -8,8 +8,8 @@ from typing import AsyncGenerator
 import numpy as np
 import sounddevice as sd
 from agents.voice import StreamedAudioInput
-
-from .voice import WhiteboardVoicePipeline
+from dotenv import load_dotenv
+from transcribe.voice import WhiteboardVoicePipeline
 
 
 class MicrophoneStreamer:
@@ -87,11 +87,11 @@ async def run_microphone_pipeline(device: str | None = None) -> None:
         streamed_input = StreamedAudioInput()
 
         # Start processing task
-        process_task = asyncio.create_task(pipeline.process_audio(streamed_input))
+        asyncio.create_task(pipeline.process_audio(streamed_input))
 
         # Stream from microphone
         async for chunk in microphone.start_streaming():
-            await streamed_input.add_chunk(chunk)
+            await streamed_input.add_audio(chunk)
 
     except KeyboardInterrupt:
         print("\n[Microphone] Stopping...")
@@ -99,7 +99,6 @@ async def run_microphone_pipeline(device: str | None = None) -> None:
         print(f"[Microphone] Error: {e}")
     finally:
         microphone.stop()
-        await streamed_input.close()
 
         # Print final whiteboard state
         print(f"\n[Final] Whiteboard items: {pipeline.service.list_items()}")
@@ -108,6 +107,7 @@ async def run_microphone_pipeline(device: str | None = None) -> None:
 
 async def main() -> None:
     """Main entry point for microphone-based voice control."""
+    load_dotenv()
     await run_microphone_pipeline()
 
 
