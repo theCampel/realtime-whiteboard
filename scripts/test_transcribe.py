@@ -4,6 +4,7 @@ import asyncio
 import wave
 from pathlib import Path
 
+from agents import set_trace_processors
 import numpy as np
 from dotenv import load_dotenv
 from transcribe.voice import WhiteboardVoicePipeline
@@ -55,6 +56,7 @@ async def main() -> None:
     """Main entry point for the voice transcription service."""
     print("[Voice] Starting whiteboard voice pipeline...")
     load_dotenv()
+    set_trace_processors([])
     await test_with_audio_file(str(Path(__file__).parent / "sample.wav"))
 
 

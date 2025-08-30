@@ -24,15 +24,26 @@ class WhiteboardVoicePipeline:
 
     async def process_audio(self, audio_input: AudioInput | StreamedAudioInput) -> None:
         """Process audio input and execute whiteboard commands."""
+        print("[Voice] Starting audio processing...")
         result = await self.pipeline.run(audio_input)
+        print("[Voice] Pipeline started, processing events...")
 
         # Process the stream without audio output
+        event_count = 0
         async for event in result.stream():
+            event_count += 1
+            print(f"[Voice] Event {event_count}: {event.type}")
+
             if event.type == "voice_stream_event_lifecycle":
                 print(f"[Voice] Lifecycle event: {event}")
             elif event.type == "voice_stream_event_error":
                 print(f"[Voice] Error: {event}")
-            # Skip audio events - we don't need to output audio
+            elif event.type == "voice_stream_event_audio":
+                print(f"[Voice] Audio event: {event}")
+            else:
+                print(f"[Voice] Unknown event type: {event.type}")
+
+        print(f"[Voice] Finished processing {event_count} events")
 
     async def process_static_audio(self, audio_buffer: np.ndarray) -> None:
         """Process a complete audio buffer (for push-to-talk or pre-recorded audio)."""
