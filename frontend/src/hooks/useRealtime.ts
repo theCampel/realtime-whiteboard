@@ -5,11 +5,14 @@ interface RealtimeState {
   isRecording: boolean
   startRecording: () => void
   stopRecording: () => void
+  sendTestCommand: (command: any) => void
+  setEditor: (editor: any) => void
 }
 
 export function useRealtime(): RealtimeState {
   const [isConnected, setIsConnected] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const editorRef = useRef<any>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
 
@@ -30,8 +33,13 @@ export function useRealtime(): RealtimeState {
 
     ws.onmessage = (event) => {
       console.log('Received:', event.data)
-      // TODO: Handle drawing commands from backend
-      // Parse JSON and call tldraw editor methods
+      
+      try {
+        const command = JSON.parse(event.data)
+        handleDrawingCommand(command)
+      } catch (error) {
+        console.log('Non-JSON message:', event.data)
+      }
     }
 
     ws.onerror = (error) => {
@@ -72,10 +80,56 @@ export function useRealtime(): RealtimeState {
     }
   }
 
+  const handleDrawingCommand = (command: any) => {
+    const editor = editorRef.current
+    if (!editor) {
+      console.log('Editor not ready, queuing command:', command)
+      return
+    }
+
+    console.log('Handling drawing command:', command)
+    
+    switch (command.type) {
+      case 'draw_item':
+        if (command.shape) {
+          editor.createShapes([command.shape])
+          console.log('Drew shape:', command.shape.id)
+        }
+        break
+      case 'remove_item':
+        if (command.shapeId) {
+          editor.deleteShapes([command.shapeId])
+          console.log('Removed shape:', command.shapeId)
+        }
+        break
+      case 'draw_connection':
+        if (command.arrow) {
+          editor.createShapes([command.arrow])
+          console.log('Drew connection:', command.arrow.id)
+        }
+        break
+      default:
+        console.log('Unknown command type:', command.type)
+    }
+  }
+
+  const sendTestCommand = (command: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(command))
+    }
+  }
+
+  const setEditor = (editor: any) => {
+    editorRef.current = editor
+    console.log('Editor set in ref:', !!editor)
+  }
+
   return {
     isConnected,
     isRecording,
     startRecording,
-    stopRecording
+    stopRecording,
+    sendTestCommand,
+    setEditor
   }
 }

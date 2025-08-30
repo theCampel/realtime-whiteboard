@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import json
+from .mapping import get_shape_definition, get_connection_definition
 
 app = FastAPI(title="Whiteboard Backend", description="Speech-to-whiteboard drawing API")
 
@@ -18,14 +20,38 @@ def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/test-draw/{item_type}/{item_name}")
+async def test_draw_item(item_type: str, item_name: str):
+    """Test endpoint to simulate a tool call and return the shape definition."""
+    shape = get_shape_definition(item_type, item_name, position=(200, 150))
+    return {
+        "type": "draw_item",
+        "shape": shape
+    }
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time audio streaming and drawing commands."""
     await websocket.accept()
     try:
         while True:
-            # For now, just echo messages back
+            # Receive commands from frontend
             data = await websocket.receive_text()
-            await websocket.send_text(f"Echo: {data}")
+            
+            try:
+                # Try to parse as JSON command
+                command = json.loads(data)
+                print(f"Received command: {command}")
+                
+                # For testing, just echo the command back
+                # In the real implementation, this would process audio and call the agent
+                await websocket.send_text(json.dumps(command))
+                
+            except json.JSONDecodeError:
+                # Handle non-JSON messages (like simple text)
+                print(f"Received text: {data}")
+                await websocket.send_text(f"Echo: {data}")
+                
     except WebSocketDisconnect:
         print("Client disconnected")

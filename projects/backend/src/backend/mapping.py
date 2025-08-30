@@ -67,7 +67,7 @@ def get_shape_definition(item_type: str, unique_name: str, position: tuple[float
     
     # Create the full shape definition
     shape = {
-        "id": unique_name,
+        "id": f"shape:{unique_name}",
         "type": template["type"],
         "x": position[0],
         "y": position[1],
@@ -88,14 +88,14 @@ def get_connection_definition(item1: str, item2: str) -> Dict[str, Any]:
     Returns:
         tldraw arrow shape definition
     """
-    connection_id = f"connection_{item1}_{item2}"
+    connection_id = f"shape:connection_{item1}_{item2}"
     
     return {
         "id": connection_id,
         "type": "arrow",
         "props": {
-            "start": {"type": "binding", "boundShapeId": item1, "normalizedAnchor": {"x": 0.5, "y": 0.5}},
-            "end": {"type": "binding", "boundShapeId": item2, "normalizedAnchor": {"x": 0.5, "y": 0.5}},
+            "start": {"type": "binding", "boundShapeId": f"shape:{item1}", "normalizedAnchor": {"x": 0.5, "y": 0.5}},
+            "end": {"type": "binding", "boundShapeId": f"shape:{item2}", "normalizedAnchor": {"x": 0.5, "y": 0.5}},
             "color": "black",
             "size": "m"
         }

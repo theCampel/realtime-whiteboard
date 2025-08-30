@@ -3,7 +3,27 @@ import 'tldraw/tldraw.css'
 import { useRealtime } from './hooks/useRealtime'
 
 export default function Whiteboard() {
-  const { isConnected, isRecording, startRecording, stopRecording } = useRealtime()
+  const { isConnected, isRecording, startRecording, stopRecording, sendTestCommand, setEditor } = useRealtime()
+
+  const testDrawDatabase = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/test-draw/database/test-db')
+      const command = await response.json()
+      sendTestCommand(command)
+    } catch (error) {
+      console.error('Failed to test draw:', error)
+    }
+  }
+
+  const testDrawServer = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/test-draw/server/api-server')
+      const command = await response.json()
+      sendTestCommand(command)
+    } catch (error) {
+      console.error('Failed to test draw:', error)
+    }
+  }
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
@@ -39,10 +59,44 @@ export default function Whiteboard() {
         >
           {isRecording ? 'Stop Recording' : 'Start Recording'}
         </button>
+        
+        {/* Test Buttons */}
+        <button
+          onClick={testDrawDatabase}
+          style={{
+            background: '#0066cc',
+            border: 'none',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Test: Draw Database
+        </button>
+        
+        <button
+          onClick={testDrawServer}
+          style={{
+            background: '#009900',
+            border: 'none',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Test: Draw Server
+        </button>
       </div>
 
       {/* tldraw Canvas */}
-      <Tldraw />
+      <Tldraw 
+        onMount={(editor) => {
+          setEditor(editor)
+          console.log('tldraw editor mounted')
+        }}
+      />
     </div>
   )
 }
