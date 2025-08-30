@@ -8,7 +8,7 @@ def get_shape_definition(item_type: str, unique_name: str, position: tuple[float
     Convert an item type to a tldraw shape definition.
     
     Args:
-        item_type: The type of item (e.g., "database", "server", "user")
+        item_type: The type of item (e.g., "database", "server", "user", "llm")
         unique_name: Unique identifier for this shape
         position: (x, y) position on the canvas
     
@@ -16,39 +16,38 @@ def get_shape_definition(item_type: str, unique_name: str, position: tuple[float
         tldraw shape definition as a dictionary
     """
     
-    # Basic shape mappings - expand this as needed
+    # Custom shape mappings matching our frontend shape definitions
     shape_templates = {
         "database": {
-            "type": "geo",
+            "type": "database",
             "props": {
-                "geo": "ellipse",
-                "w": 120,
-                "h": 80,
-                "fill": "solid",
-                "color": "blue",
-                "text": unique_name
+                "w": 80,
+                "h": 100,
+                "color": "green"
             }
         },
         "server": {
-            "type": "geo", 
+            "type": "server", 
             "props": {
-                "geo": "rectangle",
-                "w": 100,
-                "h": 60,
-                "fill": "solid",
-                "color": "green",
-                "text": unique_name
+                "w": 120,
+                "h": 80,
+                "color": "gray"
             }
         },
         "user": {
-            "type": "geo",
+            "type": "user", 
             "props": {
-                "geo": "ellipse", 
-                "w": 80,
+                "w": 60,
                 "h": 80,
-                "fill": "solid",
-                "color": "orange",
-                "text": unique_name
+                "color": "blue"
+            }
+        },
+        "llm": {
+            "type": "llm",
+            "props": {
+                "w": 100,
+                "h": 80,
+                "color": "purple"
             }
         }
     }

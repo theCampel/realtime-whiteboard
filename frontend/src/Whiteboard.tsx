@@ -29,6 +29,16 @@ export default function Whiteboard() {
     }
   }
 
+  const testDrawLLM = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/test-draw-llm/chatgpt-model')
+      const command = await response.json()
+      sendTestCommand(command)
+    } catch (error) {
+      console.error('Failed to test draw:', error)
+    }
+  }
+
   const testConnectItems = async () => {
     // First, ensure the items exist to avoid errors. This is for testing convenience.
     await testDrawDatabase()
@@ -109,6 +119,20 @@ export default function Whiteboard() {
         </button>
         
         <button
+          onClick={testDrawLLM}
+          style={{
+            background: '#6f42c1',
+            border: 'none',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Test: Draw LLM
+        </button>
+        
+        <button
           onClick={testConnectItems}
           style={{
             background: '#cc6600',
@@ -127,6 +151,9 @@ export default function Whiteboard() {
       <Tldraw 
         shapeUtils={[DatabaseShapeUtil, ServerShapeUtil, UserShapeUtil, LLMShapeUtil]}
         onMount={(editor) => {
+          // Register the editor with the useRealtime hook
+          setEditor(editor)
+          
           // Function to find a good position for new shapes
           const findGoodPosition = (shapeType: string, shapeWidth: number, shapeHeight: number) => {
             // Get all shapes and filter by type
