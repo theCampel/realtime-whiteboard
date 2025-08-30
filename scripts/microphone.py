@@ -86,12 +86,28 @@ async def run_microphone_pipeline(device: str | None = None) -> None:
         # Create streamed audio input
         streamed_input = StreamedAudioInput()
 
-        # Start processing task
-        asyncio.create_task(pipeline.process_audio(streamed_input))
+        # Start processing task and keep reference to it
+        process_task = asyncio.create_task(pipeline.process_audio(streamed_input))
 
         # Stream from microphone
-        async for chunk in microphone.start_streaming():
-            await streamed_input.add_audio(chunk)
+        chunk_count = 0
+        try:
+            async for chunk in microphone.start_streaming():
+                chunk_count += 1
+                if chunk_count % 50 == 0:  # Print every 50 chunks (~1 second)
+                    print(f"[Microphone] Processed {chunk_count} audio chunks, chunk size: {len(chunk)}")
+                await streamed_input.add_audio(chunk)
+        except Exception as stream_error:
+            print(f"[Microphone] Streaming error: {stream_error}")
+
+        # Wait for processing to complete if it's still running
+        if not process_task.done():
+            print("[Microphone] Waiting for audio processing to complete...")
+            try:
+                await asyncio.wait_for(process_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                print("[Microphone] Audio processing timeout")
+                process_task.cancel()
 
     except KeyboardInterrupt:
         print("\n[Microphone] Stopping...")
