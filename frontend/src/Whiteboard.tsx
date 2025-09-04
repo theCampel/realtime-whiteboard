@@ -276,7 +276,7 @@ export default function Whiteboard() {
               setTimeout(() => {
                 console.log('🎯 Running analysis after component addition via voice')
                 architectureAnalysis.analyzeDiagram()
-              }, 1000) // 10 second delay to allow user to add more components
+              }, 10000) // 10 second delay to allow user to add more components
             }
           })
           
