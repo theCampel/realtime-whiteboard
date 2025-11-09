@@ -1,220 +1,331 @@
 # Speech-to-Whiteboard Drawing
 
-make key:
+Transform your spoken words into visual architecture diagrams in real-time using OpenAI's Realtime API and tldraw.
+
+## 🎯 What It Does
+
+Speak naturally about system architecture (e.g., "Draw a database at position 100, 200, then draw a server at 400, 200, and connect them") and watch as your words are instantly transformed into visual diagrams on an interactive whiteboard.
+
+## ✨ Features
+
+### 🎤 Voice-Controlled Diagramming
+- **Real-time speech recognition** using OpenAI's Realtime API
+- **Natural language processing** - just describe what you want
+- **Instant visual feedback** - shapes appear as you speak
+- **Smart connections** - automatically creates arrows between components
+
+### 🎨 Custom Architecture Components
+- **Database** - Cylinder with stacked disks (green)
+- **Server** - 3D server rack (gray)
+- **User/Person** - Stick figure (blue)
+- **GPT-5/LLM** - Neural network brain (purple)
+- **Frontend** - Browser window mockup (red)
+- **GPT Realtime** - Audio waveform visualization (blue)
+
+### 🤖 AI-Powered Suggestions
+- Automatically analyzes your architecture diagrams
+- Suggests missing components based on best practices
+- One-click to add suggested components with connections
+- Helps you build complete, well-architected systems
+
+## 🏗️ Architecture
+
+This is a **browser-only** application that connects directly to OpenAI's Realtime API:
+
 ```
-curl -X POST https://api.openai.com/v1/realtime/client_secrets \
-                               -H "Authorization: Bearer sk-proj-whatever" \
-                               -H "Content-Type: application/json" \
-                               -d '{
-                             "session": {
-                               "type": "realtime",
-                               "model": "gpt-realtime"
-                             }
-                           }'
-                           ```
+User Speech → Browser (MediaRecorder API)
+    ↓
+OpenAI Realtime API (WebRTC connection)
+    ↓
+Speech-to-Text + Intent Understanding
+    ↓
+Tool Calls (draw_item, connect, delete_item, add_text)
+    ↓
+tldraw Canvas Updates (shapes and arrows rendered)
+    ↓
+Architecture Analysis (GPT-5-mini via Chat Completions API)
+    ↓
+AI Suggestions Popup (optional enhancements)
+```
 
-A real-time hackathon project that converts speech into whiteboard drawings using OpenAI's real-time API and tldraw.
-
-## 🎯 Project Vision
-
-Speak naturally about system architecture (e.g., "Add a database connected to the API server") and watch as your words are transformed into visual diagrams on a collaborative whiteboard in real-time.
-
-## 🏗️ Architecture Overview
-
-### System Flow
-1. **Audio Capture**: Frontend captures microphone audio using the MediaRecorder API
-2. **Real-time Streaming**: Audio is streamed to the backend via WebSocket connection
-3. **Speech Processing**: Backend uses OpenAI's real-time API for speech-to-text transcription
-4. **Intent Understanding**: OpenAI Agent (using openai-agents SDK) processes the transcribed text and identifies drawing commands
-5. **Tool Execution**: Agent calls tools like `draw_item("database", "db1")` when it detects relevant speech
-6. **Shape Mapping**: Backend maps abstract items to concrete tldraw shape definitions
-7. **Canvas Updates**: Drawing commands are sent back to frontend and rendered on the tldraw canvas
-
-### Technology Stack
-
-**Frontend:**
-- React + TypeScript
-- tldraw SDK for the whiteboard canvas
-- WebSocket for real-time communication
-- MediaRecorder API for audio capture
-
-**Backend:**
-- Python + FastAPI
-- openai-agents SDK for AI agent orchestration
-- WebSocket server for real-time communication
-- OpenAI real-time API for speech-to-text
+**Key Technologies:**
+- **Frontend**: React + TypeScript
+- **Whiteboard**: tldraw SDK
+- **Voice AI**: OpenAI Realtime API (direct browser connection)
+- **Suggestions**: OpenAI Chat Completions API (GPT-4o)
+- **Schema Validation**: Zod
 
 ## 📁 Project Structure
 
 ```
 /whiteboard
-├── backend/                    # Python backend service
-│   ├── pyproject.toml         # Python dependencies and config
-│   └── src/whiteboard_api/
-│       ├── __init__.py
-│       ├── main.py            # FastAPI app with WebSocket endpoint
-│       ├── agent.py           # OpenAI Agent setup and tool definitions
-│       ├── mapping.py         # Maps item types to tldraw shapes
-│       └── stream_processor.py # Audio processing pipeline
-├── frontend/                   # React frontend application
-│   ├── package.json           # Node.js dependencies
+├── frontend/                   # React application
 │   ├── src/
-│   │   ├── App.tsx            # Main application component
-│   │   ├── Whiteboard.tsx     # tldraw canvas with controls
-│   │   └── hooks/
-│   │       └── useRealtime.ts # WebSocket connection and audio streaming
-│   └── public/
-├── pyproject.toml             # Root workspace configuration
+│   │   ├── App.tsx            # Router with landing page
+│   │   ├── Whiteboard.tsx     # Main whiteboard component
+│   │   ├── hooks/
+│   │   │   ├── useOpenAIRealtime.ts      # Voice control via OpenAI Realtime API
+│   │   │   └── useArchitectureAnalysis.ts # AI-powered suggestions
+│   │   ├── components/
+│   │   │   ├── SuggestionsPopup.tsx      # Architecture suggestions UI
+│   │   │   └── ui/                       # Custom shape components
+│   │   │       ├── DatabaseShape.tsx
+│   │   │       ├── ServerShape.tsx
+│   │   │       ├── UserShape.tsx
+│   │   │       ├── LLMShape.tsx
+│   │   │       ├── FrontendShape.tsx
+│   │   │       └── GPTRealtimeShape.tsx
+│   │   ├── index.css          # Global styles + shape color variables
+│   │   └── main.tsx           # Application entry point
+│   ├── token.ts               # Ephemeral token generator script
+│   ├── package.json           # Dependencies
+│   └── vite.config.ts         # Vite configuration
 └── README.md                  # This file
 ```
-
-## 🔄 Data Flow Between Components
-
-### Frontend → Backend
-- **Audio Stream**: Raw audio data captured from microphone → WebSocket → Backend
-- **Connection Management**: WebSocket lifecycle events (connect/disconnect/error)
-
-### Backend → Frontend  
-- **Drawing Commands**: JSON objects describing tldraw operations
-  ```json
-  {
-    "type": "draw_item",
-    "shape": { /* tldraw shape definition */ }
-  }
-  ```
-- **Status Updates**: Connection status, processing state, error messages
-
-### Backend Internal Flow
-1. **WebSocket Handler** receives audio data
-2. **AudioStreamProcessor** sends audio to OpenAI real-time API
-3. **OpenAI Agent** processes transcribed text and calls tools
-4. **Tool Functions** (`draw_item`, `remove_item`, `draw_connection`) execute
-5. **Shape Mapper** converts abstract items to tldraw JSON
-6. **WebSocket Handler** sends drawing commands back to frontend
-
-### Frontend Internal Flow
-1. **useRealtime Hook** manages WebSocket connection and audio capture
-2. **MediaRecorder** captures audio and streams via WebSocket
-3. **Whiteboard Component** receives drawing commands from WebSocket
-4. **tldraw Editor** renders shapes and connections on canvas
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.12+
-- Node.js 18+
-- OpenAI API key
+- **Node.js 18+**
+- **OpenAI API Key** (with Realtime API access)
 
-### Setup Instructions
+### Installation
 
-1. **Install Python dependencies:**
+1. **Clone the repository**
    ```bash
-   uv sync --all-packages --all-extras
+   git clone <your-repo-url>
+   cd whiteboard
    ```
 
-2. **Install frontend dependencies:**
+2. **Install dependencies**
    ```bash
    cd frontend
    npm install
    ```
 
-3. **Set environment variables:**
-   ```bash
-   export OPENAI_API_KEY=sk-...
+3. **Set up environment variables (optional)**
+   
+   If you want to use the AI architecture suggestion feature, create a file named `frontend/.env` and add your OpenAI API key:
+   ```env
+   VITE_OPENAI_API_KEY=sk-proj-...
    ```
 
-4. **Run the backend:**
-   ```bash
-   uv run fastapi dev projects/backend/src/backend/main.py
-   ```
+### Running the Application
 
-5. **Run the frontend (in another terminal):**
+1. **Start the development server**
    ```bash
    cd frontend
    npm run dev
    ```
 
-6. **Open your browser to:** `http://localhost:3000`
+2. **Open your browser**
+   - Navigate to `http://localhost:3000`
+   - Click "Get Started" on the landing page
+   - A popup will appear asking for your OpenAI API key.
+   - Paste your `sk-proj-...` key and click "Connect".
+   - Allow microphone access when prompted.
+   - Start speaking your architecture!
 
-## 🎯 Hackathon Development Plan
+## 🎯 How to Use
 
-### Milestone 1: Basic Infrastructure (First 2-3 hours)
-- **Person A (Backend)**: Set up FastAPI with WebSocket endpoint that echoes messages
-- **Person B (Frontend)**: Set up React + tldraw with WebSocket connection
-- **Person C (Research)**: Investigate MediaRecorder API and OpenAI real-time audio formats
+### Voice Commands
 
-### Milestone 2: Core Pipeline (Next 3-4 hours)  
-- **Person A (Backend)**: Implement binary audio handling and hardcoded drawing commands
-- **Person B (Frontend)**: Implement audio capture/streaming and shape rendering
-- **Person C (Agent)**: Create agent tools and basic shape mappings
+The AI agent understands natural language. Here are some example phrases:
 
-### Milestone 3: Full Integration (Final 2-3 hours)
-- **Person A (Backend)**: Integrate OpenAI Agents SDK with audio pipeline
-- **Person B (Frontend)**: Polish UI and implement all drawing command types
-- **Person C (Agent)**: Expand shape library and refine agent instructions
+**Drawing Components:**
+- "Draw a database at position 200, 300"
+- "Add a server at 500, 200"
+- "Put a user at 100, 400"
+- "Create a GPT-5 model at 800, 300"
+- "Draw a frontend at 300, 100"
+- "Add GPT Realtime at 600, 400"
 
-## 🔧 Key Integration Points
+**Creating Connections:**
+- "Connect the database to the server" (after drawing both)
+- "Draw a one-way connection from user to frontend"
+- "Make a two-way connection between server and GPT-5"
 
-### WebSocket Message Format
-```typescript
-// Frontend → Backend (Audio)
-type AudioMessage = {
-  type: 'audio_chunk'
-  data: ArrayBuffer  // Raw audio data
-}
+**Managing Shapes:**
+- "Delete the database"
+- "Remove the server"
 
-// Backend → Frontend (Commands)
-type DrawingCommand = 
-  | { type: 'draw_item', shape: TldrawShape }
-  | { type: 'remove_item', shapeId: string }
-  | { type: 'draw_connection', arrow: TldrawArrow }
-  | { type: 'status', message: string }
-```
+**Adding Text:**
+- "Add text 'API Layer' at position 400, 150"
+- "Write 'Authentication Flow' at 250, 500"
 
-### Agent Tool Interface
-```python
-# Tools that the OpenAI Agent can call
-def draw_item(item_type: str, unique_name: str) -> dict
-def remove_item(unique_name: str) -> dict  
-def draw_connection(item1: str, item2: str) -> dict
-```
+### AI Suggestions Feature
 
-### Shape Mapping Examples
-```python
-# mapping.py converts these:
-"database" → tldraw ellipse (blue)
-"server" → tldraw rectangle (green)  
-"user" → tldraw ellipse (orange)
-```
+After you add components via voice:
+1. The system automatically analyzes your diagram (after 11 seconds)
+2. Suggestions appear in the popup on the right
+3. Click "Add to Diagram" to accept a suggestion
+4. The component and its connections are added automatically
+5. A new analysis runs after adding suggested components
 
-## 🎤 Why WebSockets Over WebRTC?
+## 🔧 Development
 
-For this hackathon project, WebSockets are the clear choice:
-
-- **Simplicity**: WebSocket implementation takes minutes, WebRTC setup takes hours
-- **Architecture Fit**: Our flow is client→server→client, not peer-to-peer
-- **Infrastructure**: WebSockets need no additional servers; WebRTC requires STUN/TURN servers
-- **Performance**: The AI processing time (hundreds of ms) dwarfs any network latency differences
-
-## 🛠️ Development Commands
+### Available Scripts
 
 ```bash
-# Backend development
-uv run fastapi dev backend/src/whiteboard_api/main.py
+# Start development server
+npm run dev
 
-# Frontend development  
-cd frontend && npm run dev
+# Build for production
+npm run build
 
-# Install new Python packages
-uv add package-name --project backend
+# Preview production build
+npm run preview
 
-# Install new Node packages
-cd frontend && npm install package-name
+# Run linter
+npm run lint
+
+# Generate ephemeral token
+npm run generate-token
 ```
 
-## 🎨 Extending the System
+### Project Configuration
 
-- **Add new shapes**: Update `mapping.py` with new item types
-- **Improve agent**: Modify prompts and tools in `agent.py`
-- **Enhanced UI**: Customize the tldraw interface in `Whiteboard.tsx`
-- **Better audio**: Experiment with audio preprocessing in `useRealtime.ts`
+- **TypeScript**: Strict mode enabled
+- **Vite**: Development server on port 3000
+- **React**: v18 with React Router for navigation
+- **Linting**: ESLint with TypeScript and React rules
+
+## 🎨 Customization
+
+### Adding New Shape Types
+
+1. **Create a new shape utility** in `frontend/src/components/ui/`:
+   ```typescript
+   import { BaseBoxShapeUtil, HTMLContainer, TLBaseShape } from 'tldraw'
+   
+   export type MyShape = TLBaseShape<'myshape', { w: number; h: number; color: string }>
+   
+   export class MyShapeUtil extends BaseBoxShapeUtil<MyShape> {
+     static override type = 'myshape' as const
+     getDefaultProps() { return { w: 100, h: 100, color: 'blue' } }
+     component(shape: MyShape) { /* SVG rendering */ }
+     indicator(shape: MyShape) { /* Selection indicator */ }
+   }
+   ```
+
+2. **Register in Whiteboard.tsx**:
+   ```typescript
+   import { MyShapeUtil } from './components/ui/MyShape'
+   
+   <Tldraw shapeUtils={[..., MyShapeUtil]} />
+   ```
+
+3. **Add to useOpenAIRealtime.ts** tool definition:
+   - Update the `item_type` enum in `drawItem` tool
+   - Add mapping in `shapeTypeMap`
+   - Define dimensions and color
+
+4. **Add CSS variables** in `index.css`:
+   ```css
+   --myshape-primary: 200 70% 50%;
+   ```
+
+### Modifying the AI Agent
+
+Edit the `SYSTEM_PROMPT` in `frontend/src/hooks/useOpenAIRealtime.ts` to change:
+- Agent personality and behavior
+- Available item types
+- Instruction style
+- Response patterns
+
+### Customizing Suggestions
+
+Modify `useArchitectureAnalysis.ts` to:
+- Change the analysis prompt
+- Adjust suggestion frequency
+- Add new component types
+- Modify the GPT-5-mini model or parameters
+
+## 🔐 Security Notes
+
+- **Ephemeral tokens** are short-lived (60 seconds) and provide temporary access
+- **API keys** should never be committed to version control
+- The `.env` file is gitignored by default
+- Tokens are entered by users at runtime, not hardcoded
+
+## 🎓 Technical Deep Dive
+
+### How Voice Commands Become Shapes
+
+1. **Audio Capture**: Browser's MediaRecorder captures microphone input
+2. **Direct Streaming**: Audio streams to OpenAI Realtime API via WebRTC
+3. **Transcription**: OpenAI converts speech to text in real-time
+4. **Intent Understanding**: RealtimeAgent processes text and identifies tool calls
+5. **Tool Execution**: Browser-side tools manipulate the tldraw editor
+6. **Canvas Update**: tldraw rerenders with new shapes/connections
+
+### Tool Call Examples
+
+When you say "Draw a database at 100, 200":
+```javascript
+drawItem.execute({ 
+  item_type: 'database', 
+  x: 100, 
+  y: 200 
+})
+```
+
+This creates:
+```javascript
+{
+  id: 'shape:uuid-here',
+  type: 'database',
+  x: 100,
+  y: 200,
+  props: { w: 160, h: 200, color: 'green' }
+}
+```
+
+### Connection Geometry
+
+The system uses smart edge point calculation:
+- **Rectangular shapes** (server, gpt_realtime): Uses `edgePointRect()` for precise edge connections
+- **Elliptical shapes** (database, user, llm, frontend): Uses `edgePointEllipse()` for curved edge connections
+- Arrows automatically bind to shapes and follow them when moved
+
+## 🐛 Troubleshooting
+
+**"Connection failed: Invalid ephemeral token"**
+- Ensure token starts with `ek_`
+- Tokens expire after 60 seconds - generate a new one
+- Check your OpenAI API key has Realtime API access
+
+**"No API key available" in console**
+- Set `VITE_OPENAI_API_KEY` in `frontend/.env`
+- This is only needed for the suggestions feature
+- Voice commands work without this
+
+**Microphone not working**
+- Check browser permissions (must allow microphone access)
+- Ensure you clicked "Connect" and token is valid
+- Look for errors in browser console
+
+**Shapes not appearing**
+- Check the browser console for errors
+- Verify the AI understood your command (look for tool call logs)
+- Try more explicit coordinates: "Draw a database at position 200, 300"
+
+## 📝 License
+
+This is a hackathon/demo project. Use as you see fit!
+
+## 🙏 Acknowledgments
+
+- **OpenAI** - Realtime API and Agents SDK
+- **tldraw** - Excellent whiteboard library
+- **React** - UI framework
+
+## 🔮 Future Ideas
+
+- [ ] Save/load diagrams
+- [ ] Multi-user collaboration
+- [ ] Export diagrams as SVG/PNG
+- [ ] More shape types (cache, queue, load balancer, etc.)
+- [ ] Voice-controlled shape editing (move, resize, recolor)
+- [ ] Automatic layout optimization
+- [ ] Diagram templates

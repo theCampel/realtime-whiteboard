@@ -1,24 +1,14 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Project
-.env
-tmp/
-
-# Virtual environments
-.venv
-
 # OS / IDE
 .DS_Store
 .idea/
+.vscode/
 
 # Frontend
 /frontend/node_modules
 frontend/dist
 frontend/build
 frontend/.env
+frontend/.env.local
+
+# Temporary files
+tmp/
