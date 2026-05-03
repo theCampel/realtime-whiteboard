@@ -1,22 +1,29 @@
-# Speech-to-Whiteboard Drawing
+# Realtime Speech-to-Whiteboard
 
-Transform your spoken words into visual architecture diagrams in real-time using OpenAI's Realtime API and tldraw.
+A browser-based whiteboard that turns spoken architecture descriptions into editable diagrams in realtime using the OpenAI Realtime API and tldraw.
 
-## 🎯 What It Does
+## What It Does
 
-Speak naturally about system architecture (e.g., _"Hey! For our implementation, the server will be connected with a 2 way connection to the frontend."_) and watch as your words are instantly transformed into visual diagrams on an interactive whiteboard! 
+Speak naturally about a system design, and the app draws components, labels, and connections directly onto an interactive canvas. For example: "Draw a server connected both ways to a frontend, with a database behind it."
 
-## Realtime Speech-to-Whiteboard Drawing Demo
+## Demo
 
 [![Realtime Speech-to-Whiteboard Drawing](https://img.youtube.com/vi/7tANdJDI4sg/0.jpg)](https://youtu.be/7tANdJDI4sg)
 
+## Highlights
 
-### Installation
+- Direct browser connection to the OpenAI Realtime API over WebRTC
+- Custom tldraw shape utilities for infrastructure components
+- Tool-calling interface for drawing, connecting, deleting, and labeling shapes
+- Optional architecture analysis that suggests additional components after the diagram changes
+- API keys are entered locally at runtime and are not committed to the repository
+
+## Quick Start
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd whiteboard
+   git clone https://github.com/theCampel/realtime-whiteboard.git
+   cd realtime-whiteboard
    ```
 
 2. **Install dependencies**
@@ -37,24 +44,16 @@ Speak naturally about system architecture (e.g., _"Hey! For our implementation, 
    - Paste your `sk-proj-...` key and click "Connect".
    - Allow microphone access when prompted.
 
-5. **Start speaking your architecture!**
+5. **Start speaking your architecture**
    Try mentioning "Draw a server connected to a frontend!".
 
-### How to Use + Caveats
-> The app works by mapping a set list of pre-built shapes to the user's speech. This means that if the user says something that is not in the list of pre-built shapes, the app will not be able to draw it. 
+## How the Drawing Works
 
-### Future Improvements
-- [ ] Implement more shapes - perhaps a way of doing it automatically?
-- [ ] Experiment with the model writing the subtitles for the shapes.
-- [ ] It would be cool if the model could move the shapes without having to click and drag them.
-- [ ] Feel free to make a PR for more possible improvements!
+The model can call a constrained set of tools: `draw_item`, `connect`, `delete_item`, and `add_text`. Each tool call maps to a tldraw canvas update. Shapes are created with UUIDs and custom shape utilities, then sticky arrows connect to calculated edge points instead of defaulting to shape centers.
 
-## How does the Drawing Work?
-The model can only call certain shapes (via enums) in the `drawItem` tool. This, within the function, creates shapes with a random UUID and then adds them to the canvas (using the `editor.createShapes`).
+The current implementation uses a fixed set of supported component types. That constraint keeps the drawing behavior predictable and makes the realtime voice loop easier to debug.
 
-A fun challenge was how do you connect everything with the arrows. When you try to connect the raw shapes, they often go to the center. Instead, if you draw an invisible ellipse around it, and connect the sticky arrow to those, boom it works! 
-
-## 🏗️ Architecture
+## Architecture
 
 This is a **browser-only** application that connects directly to OpenAI's Realtime API:
 
@@ -79,7 +78,7 @@ AI Suggestions Popup (optional enhancements)
 - **Suggestions**: OpenAI API (GPT-5-mini)
 
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 /whiteboard
@@ -107,7 +106,7 @@ AI Suggestions Popup (optional enhancements)
 └── README.md                  # This file
 ```
 
-## 🎯 How to Use
+## How to Use
 ### Voice Commands
 
 The AI agent understands natural language. Here are some example phrases:
@@ -133,7 +132,7 @@ After you add components via voice:
 4. The component and its connections are added automatically
 5. A new analysis runs after adding suggested components
 
-## 🎨 Customization
+## Customization
 ### Adding Your Own Custom Shape Types
 
 1. **Create a new shape utility** in `frontend/src/components/ui/`:
@@ -183,7 +182,7 @@ Modify `useArchitectureAnalysis.ts` to:
 - Add new component types
 - Modify the GPT-5-mini model or parameters
 
-## 🔐 Security Notes
+## Security Notes
 
 - **Ephemeral tokens** are short-lived (60 seconds) and provide temporary access
 
